@@ -1,6 +1,6 @@
 import { Stepper, Step, StepLabel, StepContent, Box, Button, Typography, Alert, AlertTitle, ButtonGroup, LinearProgress, CircularProgress } from '@mui/material';
 import React, { Fragment, useState, useEffect } from 'react';
-import { SERVICE_UUIDS } from './Inspector';
+import { SERVICE_UUIDS } from './brompton';
 
 
 async function checkBluetoothAvailability() {

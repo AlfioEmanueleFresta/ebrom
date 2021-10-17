@@ -7,21 +7,8 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import React, { Fragment, useState, useEffect } from 'react';
 import { Mutex } from 'async-mutex';
+import { BROMPTON_SERVICES } from './brompton';
 
-const SERVICE_BIKE_INFO = "2f4ce2a3-fcbb-4f3a-b561-b9d78b5aae00";
-const SERVICE_COUNTERS = "105c6761-74bf-4ffe-94ea-f8ba79f20600";
-
-const CHAR_USER_DESCRIPTION = 0x2901;
-
-export const SERVICE_UUIDS = [
-    SERVICE_BIKE_INFO, // bike info (serials, etc.)
-    SERVICE_COUNTERS, // distance ridden, on time, etc.
-];
-
-export const SERVICE_NAME = {
-    [SERVICE_BIKE_INFO]: "Bike Info",
-    [SERVICE_COUNTERS]: "Counters",
-};
 
 
 export default function Inspector({ device, onDisconnect }) {
@@ -33,21 +20,18 @@ export default function Inspector({ device, onDisconnect }) {
         if (!services) {
             gattMutex
                 .acquire()
-                .then((release) => {
-                    device.gatt.getPrimaryServices()
-                        .then((services) => {
-                            services = services.map(service => {
-                                return {
-                                    name: SERVICE_NAME[service.uuid],
-                                    service: service
-                                }
-                            });
-                            console.log("Found services", services)
-                            setServices(services);
+                .then(release =>
+                    Promise.all(
+                        BROMPTON_SERVICES.map(async serviceConfig => {
+                            let service = await device.gatt.getPrimaryService(serviceConfig.uuid);
+                            return { gattMutex, service, serviceConfig };
                         })
+                    )
+                        .then(setServices)
                         .catch(setError)
-                        .finally(() => release());
-                });
+                        .finally(() => release())
+                )
+                .catch(setError);
         }
     });
 
@@ -69,13 +53,8 @@ export default function Inspector({ device, onDisconnect }) {
                     {error.toString()}
                 </Alert>}
             {services
-                ? services.map(serviceInfo => {
-                    const { name, service } = serviceInfo;
-                    return <ServiceInspector
-                        key={service.uuid}
-                        name={name}
-                        service={service}
-                        gattMutex={gattMutex} />
+                ? services.map(service => {
+                    return <ServiceInspector {...service} />
                 })
                 : <Box>
                     <Typography variant="subtitle1" component="div">
@@ -87,7 +66,7 @@ export default function Inspector({ device, onDisconnect }) {
     )
 }
 
-function ServiceInspector({ gattMutex, name, service }) {
+function ServiceInspector({ gattMutex, service, serviceConfig }) {
     const [chars, setChars] = useState(null);
     const [error, setError] = useState(null);
     const [expanded, setExpanded] = useState(false);
@@ -96,12 +75,20 @@ function ServiceInspector({ gattMutex, name, service }) {
         if (!error && !chars) {
             gattMutex
                 .acquire()
-                .then((release) => {
-                    service.getCharacteristics()
+                .then(release => {
+                    Promise.all(
+                        serviceConfig
+                            .characteristics
+                            .map(async charConfig => {
+                                let char = await service.getCharacteristic(charConfig.uuid);
+                                return { gattMutex, char, charConfig }
+                            })
+                    )
                         .then(setChars)
                         .catch(setError)
-                        .finally(() => release());
-                });
+                        .finally(() => release())
+                })
+                .catch(setError);
         }
     });
 
@@ -113,7 +100,7 @@ function ServiceInspector({ gattMutex, name, service }) {
                 onChange={() => setExpanded(!expanded)}>
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                     <Typography sx={{ width: '33%', flexShrink: 0 }}>
-                        {name}
+                        {serviceConfig.name}
                     </Typography>
                     <Typography sx={{ color: 'text.secondary' }}>
                         {error && <span>Error</span>}
@@ -137,7 +124,7 @@ function ServiceInspector({ gattMutex, name, service }) {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {chars.map(char => <CharInspector key={char.uuid} char={char} gattMutex={gattMutex} />)}
+                                {chars.map(char => <CharInspector {...char} />)}
                             </TableBody>
                         </Table>
 
@@ -148,59 +135,20 @@ function ServiceInspector({ gattMutex, name, service }) {
     );
 }
 
-function parseDescriptorValue(descriptor) {
-    let array = new Uint8Array(descriptor.buffer);
-    let text = new TextDecoder().decode(array);
-    console.log("Parsed descriptor", descriptor, text);
-    return text;
-}
-
-function getValue(value) {
-    switch (value.byteLength) {
-        case 1:
-            return value.getUint8();
-        case 2:
-            return value.getUint16();
-        case 4:
-            return value.getUint32();
-        default:
-            return new Uint8Array(value.buffer).toString();
-    }
-}
-
-function CharInspector({ gattMutex, char }) {
-    const [descriptor, setDescriptor] = useState(null);
-    const [descriptorValue, setDescriptorValue] = useState(null);
+function CharInspector({ gattMutex, char, charConfig }) {
     const [value, setValue] = useState(null);
     const [error, setError] = useState(null);
 
-    useEffect(() => {
-        if (!error && !descriptor) {
-            gattMutex.acquire()
-                .then((release) => {
-                    char.getDescriptor(CHAR_USER_DESCRIPTION)
-                        .then(setDescriptor)
-                        .catch(setError)
-                        .finally(() => release())
-                });
+    const adapter = new charConfig.adapter();
 
+    useEffect(() => {
+        if (!error && !value) {
             gattMutex
                 .acquire()
                 .then((release) => {
                     char.readValue()
+                        .then(adapter.fromDataView)
                         .then(setValue)
-                        .catch(setError)
-                        .finally(() => release())
-                });
-        }
-
-        if (!error && descriptor && !descriptorValue) {
-            gattMutex
-                .acquire()
-                .then((release) => {
-                    descriptor.readValue()
-                        .then(parseDescriptorValue)
-                        .then(setDescriptorValue)
                         .catch(setError)
                         .finally(() => release())
                 });
@@ -219,14 +167,10 @@ function CharInspector({ gattMutex, char }) {
                 </TableRow>}
             <TableRow key={char.uuid}>
                 <TableCell key="name">
-                    {descriptorValue
-                        ? descriptorValue.toString()
-                        : "Loading..."}
+                    {charConfig.name}
                 </TableCell>
                 <TableCell key="value" align="right">
-                    {value
-                        ? getValue(value)
-                        : "..."}
+                    <strong>{value ? value : "..."}</strong>
                 </TableCell>
             </TableRow>
         </Fragment>
