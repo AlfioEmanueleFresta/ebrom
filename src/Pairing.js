@@ -34,7 +34,7 @@ export default function Pairing({ onConnect, resume = false }) {
     return (
         <Box>
             <Typography variant="h4" component="div">
-                Let's get set up<br /><br />
+                {step ? "Let's get set up" : "Your Brommie's stats"}<br /><br />
             </Typography>
             <Stepper activeStep={step} orientation="vertical">
                 <Step key={0}>
@@ -148,7 +148,7 @@ function WelcomeStepContent({ onNext }) {
     )
 }
 
-function InstallAppStepContent({ onNext }) {
+function InstallAppStepContent({ onPrev, onNext }) {
     return (
         <Fragment>
             <Typography variant="p" component="p">
@@ -165,7 +165,7 @@ function InstallAppStepContent({ onNext }) {
                     Download Brompton Electric app from the Google Play Store
                 </Button>
             </Box>
-            <WizardInfoButtonGroup back={null} cont={onNext} />
+            <WizardInfoButtonGroup back={onPrev} cont={onNext} />
         </Fragment>
     )
 }
