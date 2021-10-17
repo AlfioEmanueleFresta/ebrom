@@ -2,32 +2,34 @@ import {
     Button, CircularProgress, Typography, Box,
     Accordion, AccordionSummary, AccordionDetails,
     Alert, AlertTitle, LinearProgress,
-    Table, TableHead, TableBody, TableRow, TableCell
+    Table, TableBody, TableRow, TableCell, ButtonGroup
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import React, { Fragment, useState, useEffect } from 'react';
 import { Mutex } from 'async-mutex';
-import { BROMPTON_SERVICES } from './brompton';
+import { BROMPTON_SERVICES, SERVICE_UUIDS } from './brompton';
+import { ConstructionOutlined } from '@mui/icons-material';
 
 
 
 export default function Inspector({ device, onDisconnect }) {
-    const [services, setServices] = useState(null);
+    const [servicesMap, setServicesMap] = useState(null);
     const [error, setError] = useState(null);
     const gattMutex = new Mutex();
 
     useEffect(() => {
-        if (!services) {
+        if (!servicesMap) {
             gattMutex
                 .acquire()
                 .then(release =>
                     Promise.all(
-                        BROMPTON_SERVICES.map(async serviceConfig => {
-                            let service = await device.gatt.getPrimaryService(serviceConfig.uuid);
-                            return { gattMutex, service, serviceConfig };
+                        SERVICE_UUIDS.map(async uuid => {
+                            let service = await device.gatt.getPrimaryService(uuid);
+                            return [uuid, service];
                         })
                     )
-                        .then(setServices)
+                        .then(Object.fromEntries)
+                        .then(setServicesMap)
                         .catch(setError)
                         .finally(() => release())
                 )
@@ -41,20 +43,18 @@ export default function Inspector({ device, onDisconnect }) {
             <header>
                 <h2>{device.name}</h2>
             </header>
-            <Button onClick={() => {
-                device.gatt.disconnect();
-                onDisconnect();
-            }}>
-                Disconnect
-            </Button>
             {error &&
                 <Alert severity="error">
                     <AlertTitle>Service discovery failed</AlertTitle>
                     {error.toString()}
                 </Alert>}
-            {services
-                ? services.map(service => {
-                    return <ServiceInspector {...service} />
+            {servicesMap
+                ? BROMPTON_SERVICES.map(sectionConfig => {
+                    return <InspectorSection
+                        key={sectionConfig.name}
+                        gattMutex={gattMutex}
+                        servicesMap={servicesMap}
+                        sectionConfig={sectionConfig} />
                 })
                 : <Box>
                     <Typography variant="subtitle1" component="div">
@@ -62,11 +62,18 @@ export default function Inspector({ device, onDisconnect }) {
                     </Typography>
                     <CircularProgress />
                 </Box>}
+            <br /><br />
+            <Button onClick={() => {
+                device.gatt.disconnect();
+                onDisconnect();
+            }}>
+                Disconnect
+            </Button>
         </Box>
     )
 }
 
-function ServiceInspector({ gattMutex, service, serviceConfig }) {
+function InspectorSection({ gattMutex, servicesMap, sectionConfig }) {
     const [chars, setChars] = useState(null);
     const [error, setError] = useState(null);
     const [expanded, setExpanded] = useState(false);
@@ -77,9 +84,10 @@ function ServiceInspector({ gattMutex, service, serviceConfig }) {
                 .acquire()
                 .then(release => {
                     Promise.all(
-                        serviceConfig
+                        sectionConfig
                             .characteristics
                             .map(async charConfig => {
+                                let service = servicesMap[charConfig.serviceUuid];
                                 let char = await service.getCharacteristic(charConfig.uuid);
                                 return { gattMutex, char, charConfig }
                             })
@@ -93,16 +101,16 @@ function ServiceInspector({ gattMutex, service, serviceConfig }) {
     });
 
     return (
-        <Fragment key={service.uuid}>
+        <Fragment key={sectionConfig.name}>
             <Accordion
-                key={service.uuid}
+                key={sectionConfig.name}
                 expanded={expanded}
                 onChange={() => setExpanded(!expanded)}>
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                     <Typography sx={{ width: '33%', flexShrink: 0 }}>
-                        {serviceConfig.name}
+                        <strong>{sectionConfig.name}</strong>
                     </Typography>
-                    <Typography sx={{ color: 'text.secondary' }}>
+                    <Typography sx={{ color: 'text.secondary' }} align="right">
                         {error && <span>Error</span>}
                         {!error && chars
                             ? <span>{chars.length + " values"}</span>
@@ -117,12 +125,6 @@ function ServiceInspector({ gattMutex, service, serviceConfig }) {
                         </Alert>}
                     {!error && chars
                         ? <Table>
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell>Name</TableCell>
-                                    <TableCell align="right">Value</TableCell>
-                                </TableRow>
-                            </TableHead>
                             <TableBody>
                                 {chars.map(char => <CharInspector {...char} />)}
                             </TableBody>
@@ -136,10 +138,13 @@ function ServiceInspector({ gattMutex, service, serviceConfig }) {
 }
 
 function CharInspector({ gattMutex, char, charConfig }) {
+    const [isLive, setIsLive] = useState(false);
     const [value, setValue] = useState(null);
     const [error, setError] = useState(null);
 
     const adapter = new charConfig.adapter();
+    const isWritable = char.properties.write && adapter.possibleValues;
+    const possibleValues = isWritable && adapter.possibleValues();
 
     useEffect(() => {
         if (!error && !value) {
@@ -152,6 +157,24 @@ function CharInspector({ gattMutex, char, charConfig }) {
                         .catch(setError)
                         .finally(() => release())
                 });
+
+            if (char.properties.notify) {
+                console.log("char has notifications", charConfig.name);
+                gattMutex
+                    .acquire()
+                    .then(async release => {
+                        char.addEventListener('characteristicvaluechanged', event => {
+                            let newValue = adapter.fromDataView(event.target.value);
+                            console.debug("Received notification", charConfig.name, newValue);
+                            setValue(newValue)
+                        });
+                        char.startNotifications()
+                            .then(() => setIsLive(true))
+                            .catch(setError)
+                            .finally(() => release());
+                    })
+                    .catch(setError);
+            }
         }
     });
 
@@ -167,13 +190,27 @@ function CharInspector({ gattMutex, char, charConfig }) {
                 </TableRow>}
             <TableRow key={char.uuid}>
                 <TableCell key="name">
-                    {charConfig.name}
+                    {charConfig.name} {isLive && "🔄"}
                 </TableCell>
                 <TableCell key="value" align="right">
-                    <strong>{value ? value : "..."}</strong>
+                    {isWritable
+                        ? <ButtonGroup variant="outlined">
+                            {possibleValues
+                                .map(possibleValue => <Button
+                                    variant={possibleValue == value ? "contained" : "outlined"}
+                                    onClick={() => {
+                                        let array = adapter.toUint8Array(possibleValue);
+                                        setValue(possibleValue);
+                                        char.writeValue(array)
+                                            .catch(setError);
+                                    }}>
+                                    {possibleValue}
+                                </Button>)}
+                        </ButtonGroup>
+                        : <strong>{value ? value : "..."}</strong>}
                 </TableCell>
             </TableRow>
-        </Fragment>
+        </Fragment >
     )
 
 }

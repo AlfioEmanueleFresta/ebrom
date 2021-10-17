@@ -58,7 +58,7 @@ export class FloatBatteryAdapter {
 export class FloatVoltageAdapter {
     fromDataView(dataView) {
         let volt = dataView.getFloat32(0, true);
-        return `${volt} v`;
+        return `${volt.toFixed(2)} v`;
     }
 }
 
