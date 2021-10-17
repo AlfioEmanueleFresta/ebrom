@@ -11,6 +11,8 @@ import { Mutex } from 'async-mutex';
 const SERVICE_BIKE_INFO = "2f4ce2a3-fcbb-4f3a-b561-b9d78b5aae00";
 const SERVICE_COUNTERS = "105c6761-74bf-4ffe-94ea-f8ba79f20600";
 
+const CHAR_USER_DESCRIPTION = 0x2901;
+
 export const SERVICE_UUIDS = [
     SERVICE_BIKE_INFO, // bike info (serials, etc.)
     SERVICE_COUNTERS, // distance ridden, on time, etc.
@@ -146,6 +148,13 @@ function ServiceInspector({ gattMutex, name, service }) {
     );
 }
 
+function parseDescriptorValue(descriptor) {
+    let array = new Uint8Array(descriptor.buffer);
+    let text = new TextDecoder().decode(array);
+    console.log("Parsed descriptor", descriptor, text);
+    return text;
+}
+
 function getValue(value) {
     switch (value.byteLength) {
         case 1:
@@ -169,7 +178,7 @@ function CharInspector({ gattMutex, char }) {
         if (!error && !descriptor) {
             gattMutex.acquire()
                 .then((release) => {
-                    char.getDescriptor()
+                    char.getDescriptor(CHAR_USER_DESCRIPTION)
                         .then(setDescriptor)
                         .catch(setError)
                         .finally(() => release())
@@ -190,6 +199,7 @@ function CharInspector({ gattMutex, char }) {
                 .acquire()
                 .then((release) => {
                     descriptor.readValue()
+                        .then(parseDescriptorValue)
                         .then(setDescriptorValue)
                         .catch(setError)
                         .finally(() => release())

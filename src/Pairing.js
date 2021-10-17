@@ -27,7 +27,7 @@ async function connect(selectedDevice) {
 }
 
 export default function Pairing({ onConnect, resume = false }) {
-    const [step, setStep] = useState(resume ? 2 : 0);
+    const [step, setStep] = useState(resume ? 4 : 0);
     const [prev, next] = [() => setStep(step - 1), () => setStep(step + 1)];
     const [selectedDevice, setSelectedDevice] = useState(null);
 
@@ -39,15 +39,24 @@ export default function Pairing({ onConnect, resume = false }) {
             <Stepper activeStep={step} orientation="vertical">
                 <Step key={0}>
                     <StepLabel>
-                        Install the official Bromtpon Electric app
+                        Welcome
+                    </StepLabel>
+                    <StepContent>
+                        <WelcomeStepContent onNext={next} />
+                    </StepContent>
+                </Step>
+                <Step key={1}>
+                    <StepLabel>
+                        Install the official Brompton Electric app
                     </StepLabel>
                     <StepContent>
                         <InstallAppStepContent
+                            onPrev={prev}
                             onNext={next} />
                     </StepContent>
                 </Step>
 
-                <Step key={1}>
+                <Step key={2}>
                     <StepLabel>
                         Pair your bike
                     </StepLabel>
@@ -58,7 +67,7 @@ export default function Pairing({ onConnect, resume = false }) {
                     </StepContent>
                 </Step>
 
-                <Step key={2}>
+                <Step key={3}>
                     <StepLabel>
                         Ensure your bike is switched on
                     </StepLabel>
@@ -69,7 +78,7 @@ export default function Pairing({ onConnect, resume = false }) {
                     </StepContent>
                 </Step>
 
-                <Step key={3}>
+                <Step key={4}>
                     <StepLabel>
                         Find your bike
                     </StepLabel>
@@ -83,7 +92,7 @@ export default function Pairing({ onConnect, resume = false }) {
                     </StepContent>
                 </Step>
 
-                <Step key={4}>
+                <Step key={5}>
                     <StepLabel>
                         Connection attempt
                     </StepLabel>
@@ -109,6 +118,33 @@ function WizardInfoButtonGroup({ back, cont }) {
                 Continue
             </Button>
         </ButtonGroup >
+    )
+}
+
+function WelcomeStepContent({ onNext }) {
+    return (
+        <Fragment>
+            <Typography variant="p" component="p">
+                I've built this app to connect to my Brompton Electric, and access the information that is available
+                via Bluetooth Low Energy (BLE), but isn't shown in the official app.<br /><br />
+            </Typography>
+            <Typography variant="p" component="p">
+                <strong>
+                    Note that I'm not affiliated in any way with Brompton and no warranty or support is offered with
+                    this app.<br /><br />
+                </strong>
+            </Typography>
+            <Typography variant="p" component="p">
+                If you encounter any issues, or if you have any feedback, please click the button below to raise
+                an issue on the project's GitHub page. This is a free and open source project.
+                If you're a software developer, note that all contributions
+                are welcome!<br /><br />
+            </Typography>
+            <Box>
+                <Button href="https://github.com/AlfioEmanueleFresta/ebrom/issues">Feedback</Button><br /><br />
+            </Box>
+            <WizardInfoButtonGroup back={null} cont={onNext} />
+        </Fragment>
     )
 }
 
