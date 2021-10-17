@@ -1,8 +1,8 @@
 {
   "files": {
     "main.css": "/ebrom/static/css/main.a617e044.chunk.css",
-    "main.js": "/ebrom/static/js/main.1fd18b88.chunk.js",
-    "main.js.map": "/ebrom/static/js/main.1fd18b88.chunk.js.map",
+    "main.js": "/ebrom/static/js/main.b1bdddbd.chunk.js",
+    "main.js.map": "/ebrom/static/js/main.b1bdddbd.chunk.js.map",
     "runtime-main.js": "/ebrom/static/js/runtime-main.b42f0007.js",
     "runtime-main.js.map": "/ebrom/static/js/runtime-main.b42f0007.js.map",
     "static/css/2.63acc545.chunk.css": "/ebrom/static/css/2.63acc545.chunk.css",
@@ -24,6 +24,6 @@
     "static/css/2.63acc545.chunk.css",
     "static/js/2.2fd08919.chunk.js",
     "static/css/main.a617e044.chunk.css",
-    "static/js/main.1fd18b88.chunk.js"
+    "static/js/main.b1bdddbd.chunk.js"
   ]
 }
