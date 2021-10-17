@@ -1,29 +1,29 @@
 {
   "files": {
     "main.css": "/ebrom/static/css/main.a617e044.chunk.css",
-    "main.js": "/ebrom/static/js/main.b1bdddbd.chunk.js",
-    "main.js.map": "/ebrom/static/js/main.b1bdddbd.chunk.js.map",
-    "runtime-main.js": "/ebrom/static/js/runtime-main.b42f0007.js",
-    "runtime-main.js.map": "/ebrom/static/js/runtime-main.b42f0007.js.map",
+    "main.js": "/ebrom/static/js/main.d53cb2fd.chunk.js",
+    "main.js.map": "/ebrom/static/js/main.d53cb2fd.chunk.js.map",
+    "runtime-main.js": "/ebrom/static/js/runtime-main.4cb219dc.js",
+    "runtime-main.js.map": "/ebrom/static/js/runtime-main.4cb219dc.js.map",
     "static/css/2.63acc545.chunk.css": "/ebrom/static/css/2.63acc545.chunk.css",
-    "static/js/2.2fd08919.chunk.js": "/ebrom/static/js/2.2fd08919.chunk.js",
-    "static/js/2.2fd08919.chunk.js.map": "/ebrom/static/js/2.2fd08919.chunk.js.map",
-    "static/js/3.7332d164.chunk.js": "/ebrom/static/js/3.7332d164.chunk.js",
-    "static/js/3.7332d164.chunk.js.map": "/ebrom/static/js/3.7332d164.chunk.js.map",
+    "static/js/2.784f4931.chunk.js": "/ebrom/static/js/2.784f4931.chunk.js",
+    "static/js/2.784f4931.chunk.js.map": "/ebrom/static/js/2.784f4931.chunk.js.map",
+    "static/js/3.3dff0c9f.chunk.js": "/ebrom/static/js/3.3dff0c9f.chunk.js",
+    "static/js/3.3dff0c9f.chunk.js.map": "/ebrom/static/js/3.3dff0c9f.chunk.js.map",
     "index.html": "/ebrom/index.html",
     "static/css/2.63acc545.chunk.css.map": "/ebrom/static/css/2.63acc545.chunk.css.map",
     "static/css/main.a617e044.chunk.css.map": "/ebrom/static/css/main.a617e044.chunk.css.map",
-    "static/js/2.2fd08919.chunk.js.LICENSE.txt": "/ebrom/static/js/2.2fd08919.chunk.js.LICENSE.txt",
+    "static/js/2.784f4931.chunk.js.LICENSE.txt": "/ebrom/static/js/2.784f4931.chunk.js.LICENSE.txt",
     "static/media/300.css": "/ebrom/static/media/roboto-vietnamese-300-normal.af9afdc1.woff2",
     "static/media/400.css": "/ebrom/static/media/roboto-vietnamese-400-normal.c0bec65d.woff2",
     "static/media/500.css": "/ebrom/static/media/roboto-vietnamese-500-normal.b8e494da.woff2",
     "static/media/700.css": "/ebrom/static/media/roboto-vietnamese-700-normal.3096f18a.woff2"
   },
   "entrypoints": [
-    "static/js/runtime-main.b42f0007.js",
+    "static/js/runtime-main.4cb219dc.js",
     "static/css/2.63acc545.chunk.css",
-    "static/js/2.2fd08919.chunk.js",
+    "static/js/2.784f4931.chunk.js",
     "static/css/main.a617e044.chunk.css",
-    "static/js/main.b1bdddbd.chunk.js"
+    "static/js/main.d53cb2fd.chunk.js"
   ]
 }
